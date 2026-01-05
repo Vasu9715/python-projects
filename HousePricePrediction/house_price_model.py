@@ -6,48 +6,46 @@ import numpy as np
 np.random.seed(42)
 tf.random.set_seed(42)
 
-# Dataset
+# Step 1: Create dataset
 data = {
     'size': [50, 60, 70, 80, 90],
     'rooms': [1, 2, 2, 3, 3],
     'price': [150, 200, 250, 300, 350]
 }
-
 df = pd.DataFrame(data)
 
-# Features and target
-X = df[['size', 'rooms']].astype(np.float32)
-y = df['price'].astype(np.float32)
+# Step 2: Separate features and target
+X = df[['size', 'rooms']].to_numpy(dtype=np.float32)  # Convert to NumPy array
+y = df['price'].to_numpy(dtype=np.float32)
 
-# 🔑 Normalize features
-X = (X - X.mean()) / X.std()
+# Step 3: Create normalization layer
+normalizer = tf.keras.layers.Normalization()
+normalizer.adapt(X)  # Fit to training data (NumPy array)
 
-# Model
+# Step 4: Build model
 model = tf.keras.Sequential([
-    tf.keras.Input(shape=(2,)),
-    tf.keras.layers.Dense(1)
+    tf.keras.Input(shape=(2,)),  # Define input shape
+    normalizer,                   # Normalize input
+    tf.keras.layers.Dense(1)      # Output layer
 ])
 
-# Compile with safer learning rate
+# Step 5: Compile model
 model.compile(
     optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),
     loss='mean_squared_error'
 )
 
-# Train
+# Step 6: Train model
 model.fit(X, y, epochs=300, verbose=0)
 
-# New data
+# Step 7: Predict new houses
 new_houses = pd.DataFrame({
     'size': [55, 85],
     'rooms': [1, 3]
-}).astype(np.float32)
+}).to_numpy(dtype=np.float32)  # Convert to NumPy array
 
-# Normalize using training stats
-new_houses = (new_houses - X.mean()) / X.std()
-
-# Predict
 predictions = model.predict(new_houses, verbose=0)
 
+# Step 8: Print results
 for i, price in enumerate(predictions.flatten()):
     print(f"Predicted price for house {i+1}: {price:.2f}k")
